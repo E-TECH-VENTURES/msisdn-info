@@ -8,7 +8,11 @@ PHP package that returns MSISDN info (MNO, country dialling code, ...)
 [Data source (musalbas/mcc-mnc-table)](https://github.com/musalbas/mcc-mnc-table)
 
 ## Code example
-// TODO
+You can create you own calls to server using
+```sh
+$client = new JsonRPC\Client($server_url);
+$result = $client->execute('MSISDNLookup', [$MSISDN]);
+```
 
 ## Installation
 
@@ -26,7 +30,11 @@ composer install && vagrant up
 RPC call can be tested using client_test.php in project root folder (127.0.0.1:8080/client_test.php)
 
 ## Tests
-// TODO
+Composer will setup the test environent for you. Run tests using:
+```sh
+vendor\bin\phpunit
+```
+from within a project root folder
 
 ## License
 
