@@ -6,6 +6,15 @@ class MSISDNInfoDB extends \SQLite3 {
     // connect to database
     $this->open($db_path);
 
+    $this->createInfoTable();
+
+    return $this;
+  }
+
+  /**
+  * Create info table
+  */
+  private function createInfoTable() {
     // create info table if not exists
     $this->exec('CREATE TABLE IF NOT EXISTS info (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -13,14 +22,12 @@ class MSISDNInfoDB extends \SQLite3 {
         value TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS info_name_index ON info (name);'
     );
-
-    return $this;
   }
 
   /**
-  * Create database tables
+  * Recreate data table
   */
-  public function createTables() {
+  public function recreateDataTable() {
     // drop data table and create a new one
     $this->exec('DROP INDEX IF EXISTS data_lookup_index');
     $this->exec('DROP TABLE IF EXISTS data');
@@ -45,7 +52,7 @@ class MSISDNInfoDB extends \SQLite3 {
   * @param $iso
   * @param $country_code
   * @param $mnc
-  * @return true if insert successfull, false otherwise
+  * @return bool true if insert successfull, false otherwise
   */
   public function insertData($network, $country, $mcc, $iso, $country_code, $mnc, $lookup) {
     $stmt = $this->prepare('INSERT INTO data(
@@ -66,13 +73,13 @@ class MSISDNInfoDB extends \SQLite3 {
       :lookup
     )');
 
-    $stmt->bindParam(':network', $network, \SQLITE3_TEXT);
-    $stmt->bindParam(':country', $country, \SQLITE3_TEXT);
-    $stmt->bindParam(':mcc', $mcc, \SQLITE3_TEXT);
-    $stmt->bindParam(':iso', $iso, \SQLITE3_TEXT);
-    $stmt->bindParam(':country_code', $country_code, \SQLITE3_TEXT);
-    $stmt->bindParam(':mnc', $mnc, \SQLITE3_TEXT);
-    $stmt->bindParam(':lookup', $lookup, \SQLITE3_TEXT);
+    $stmt->bindValue(':network', $network, \SQLITE3_TEXT);
+    $stmt->bindValue(':country', $country, \SQLITE3_TEXT);
+    $stmt->bindValue(':mcc', $mcc, \SQLITE3_TEXT);
+    $stmt->bindValue(':iso', $iso, \SQLITE3_TEXT);
+    $stmt->bindValue(':country_code', $country_code, \SQLITE3_TEXT);
+    $stmt->bindValue(':mnc', $mnc, \SQLITE3_TEXT);
+    $stmt->bindValue(':lookup', $lookup, \SQLITE3_TEXT);
     if ($stmt->execute()) {
       return true;
     }
@@ -83,6 +90,7 @@ class MSISDNInfoDB extends \SQLite3 {
   * Insert value for var name into info table
   * @param string $name variable name
   * @param string $value variable value
+  * @return bool true on success, false otherwise
   */
   public function setVar($name, $value) {
     $exists = $this->getVar($name, false);
@@ -100,8 +108,8 @@ class MSISDNInfoDB extends \SQLite3 {
       $stmt = $this->prepare('UPDATE info SET value = :value WHERE name = :name');
     }
 
-    $stmt->bindParam(':name', $name, \SQLITE3_TEXT);
-    $stmt->bindParam(':value', $value, \SQLITE3_TEXT);
+    $stmt->bindValue(':name', $name, \SQLITE3_TEXT);
+    $stmt->bindValue(':value', $value, \SQLITE3_TEXT);
     if ($stmt->execute()) {
       return true;
     }
@@ -116,7 +124,7 @@ class MSISDNInfoDB extends \SQLite3 {
   */
   public function getVar($name, $default_value = null) {
     $stmt = $this->prepare('SELECT value FROM info WHERE name = :name');
-    $stmt->bindParam(':name', $name, \SQLITE3_TEXT);
+    $stmt->bindValue(':name', $name, \SQLITE3_TEXT);
 
     $result = $stmt->execute();
     if ($r = $result->fetchArray()) {
@@ -128,22 +136,45 @@ class MSISDNInfoDB extends \SQLite3 {
 
   /**
   * Find by country_code and mnc
+  * TODO optimize
   * @param string $number MSISDN number
   * @return array associative array with MSISDN info
   */
   public function lookupCodes($number) {
-    for ($i = 7; $i > 2; $i--) {
-      $num = substr($number, 0, $i).'%';
+    $sql = 'SELECT iso, country_code, mnc, network FROM data WHERE lookup LIKE :num';
 
-      $stmt = $this->prepare('SELECT iso, country_code, mnc, network FROM data WHERE lookup LIKE :num');
-      $stmt->bindParam(':num', $num, \SQLITE3_TEXT);
+    for ($i = 7; $i > 2; $i--) {
+      $num = substr($number, 0, $i);
+
+      $stmt = $this->prepare($sql);
+      $stmt->bindValue(':num', $num.'%', \SQLITE3_TEXT);
       $result = $stmt->execute();
 
       if ($r = $result->fetchArray(\SQLITE3_ASSOC)) {
+        $stmt->close();
         return $r;
       }
+      $stmt->clear();
     }
 
+    // still here? try country lookup only
+    $sql = 'SELECT iso, country_code, null as mnc, null as network FROM data WHERE country_code LIKE :num';
+
+    for ($i = 2; $i > 1; $i--) {
+      $num = substr($number, 0, $i);
+
+      $stmt = $this->prepare($sql);
+      $stmt->bindValue(':num', $num.'%', \SQLITE3_TEXT);
+      $result = $stmt->execute();
+
+      if ($r = $result->fetchArray(\SQLITE3_ASSOC)) {
+        $stmt->close();
+        return $r;
+      }
+      $stmt->clear();
+    }
+
+    $stmt->close();
     return false;
   }
 
@@ -156,9 +187,10 @@ class MSISDNInfoDB extends \SQLite3 {
 
   /**
   * Commit transaction directive
+  * @return bool true if transaction completed successfully, false otherwise
   */
   public function commitTransaction() {
-    $this->exec('COMMIT TRANSACTION');
+    return $this->exec('COMMIT TRANSACTION');
   }
 
 }

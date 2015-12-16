@@ -54,7 +54,7 @@ class MSISDNInfo {
     $error = json_last_error();
 
     if ($error == JSON_ERROR_NONE) {
-      $this->db->createTables();
+      $this->db->recreateDataTable();
 
       $this->db->beginTransaction();
       // loop through all providers
@@ -69,10 +69,10 @@ class MSISDNInfo {
           $d['country_code'].$d['mnc']
         );
       }
-      $this->db->commitTransaction();
-
-      // set timestamp
-      $this->db->setVar('timestamp', time());
+      if ($this->db->commitTransaction()) {
+        $this->db->setVar('timestamp', time());
+        return true;
+      }
     }
 
     return false;

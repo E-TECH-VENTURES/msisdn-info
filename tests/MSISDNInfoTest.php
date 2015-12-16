@@ -54,7 +54,16 @@ class MSISDNInfoTest extends PHPUnit_Framework_TestCase {
     );
     $this->assertEquals($expected_info, $this->ms->db->lookupCodes(38641789567));
 
-    $this->assertFalse($this->ms->db->lookupCodes(6666656556566));
+    // create expected result
+    $expected_info = array(
+      'iso' => 'th',
+      'country_code' => '66',
+      'mnc' => null,
+      'network' => null
+    );
+    $this->assertEquals($expected_info, $this->ms->db->lookupCodes(6666656556566));
+
+    $this->assertFalse($this->ms->db->lookupCodes(7766656556566));
   }
 
 }
