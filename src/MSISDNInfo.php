@@ -3,7 +3,7 @@
 require 'MSISDNInfoDB.php';
 
 class MSISDNInfo {
-  
+
   /**
   * Data source path
   */
@@ -88,6 +88,22 @@ class MSISDNInfo {
   }
 
   /**
+  * Construct return associative array
+  * @param array $data associative array of data [iso, country_code, mnc, network, subscriber_number, error_message]
+  * @return array ready to be send to client
+  */
+  private function constructReturnArray($data) {
+    return array(
+      'iso'               => isset($data['iso']) ? $data['iso'] : null,
+      'country_code'      => isset($data['country_code']) ? $data['country_code'] : null,
+      'mnc'               => isset($data['mnc']) ? $data['mnc'] : null,
+      'network'           => isset($data['network']) ? $data['network'] : null,
+      'subscriber_number' => isset($data['subscriber_number']) ? $data['subscriber_number'] : null,
+      'error_message'     => isset($data['error_message']) ? $data['error_message'] : null
+    );
+  }
+
+  /**
   * Validate number format (must consist of digits only, max length is 15)
   * @param string $number MSISDN number to check
   * @return bool true if number format is ok, false otherwise
@@ -96,6 +112,10 @@ class MSISDNInfo {
     $number = (string)$number;
 
     if (!$number) {
+      return false;
+    }
+
+    if ($number[0] == '0') {
       return false;
     }
 
@@ -109,6 +129,21 @@ class MSISDNInfo {
     }
 
     return true;
+  }
+
+  /**
+  * Lookup number
+  * @param string $number MSISDN number to lookup
+  * @return array standardized associative array
+  */
+  public function lookupMSISDN($number) {
+    if ($this->validateMSISDNFormat($number)) {
+      $lookup = $this->db->lookupCodes($number);
+      return $this->constructReturnArray($lookup);
+    }
+    else {
+      return $this->constructReturnArray(array('error_message' => 'invalid number format'));
+    }
   }
 
 }

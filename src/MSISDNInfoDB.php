@@ -12,7 +12,7 @@ class MSISDNInfoDB extends \SQLite3 {
   }
 
   /**
-  * Create info table
+  * Create info table if not exists
   */
   private function createInfoTable() {
     // create info table if not exists
@@ -25,7 +25,7 @@ class MSISDNInfoDB extends \SQLite3 {
   }
 
   /**
-  * Recreate data table
+  * Drop and create data table
   */
   public function recreateDataTable() {
     // drop data table and create a new one
@@ -46,12 +46,12 @@ class MSISDNInfoDB extends \SQLite3 {
 
   /**
   * Insert values into data table
-  * @param $network
-  * @param $country
-  * @param $mcc
-  * @param $iso
-  * @param $country_code
-  * @param $mnc
+  * @param string $network
+  * @param string $country
+  * @param string $mcc
+  * @param string $iso
+  * @param string $country_code
+  * @param string $mnc
   * @return bool true if insert successfull, false otherwise
   */
   public function insertData($network, $country, $mcc, $iso, $country_code, $mnc, $lookup) {
@@ -136,7 +136,6 @@ class MSISDNInfoDB extends \SQLite3 {
 
   /**
   * Find by country_code and mnc
-  * TODO optimize
   * @param string $number MSISDN number
   * @return array associative array with MSISDN info
   */
@@ -152,13 +151,14 @@ class MSISDNInfoDB extends \SQLite3 {
 
       if ($r = $result->fetchArray(\SQLITE3_ASSOC)) {
         $stmt->close();
+        $r['subscriber_number'] = substr($number, $i);
         return $r;
       }
-      $stmt->clear();
+      $stmt->close();
     }
 
     // still here? try country lookup only
-    $sql = 'SELECT iso, country_code, null as mnc, null as network FROM data WHERE country_code LIKE :num';
+    $sql = 'SELECT iso, country_code FROM data WHERE country_code LIKE :num';
 
     for ($i = 2; $i > 1; $i--) {
       $num = substr($number, 0, $i);
@@ -169,13 +169,13 @@ class MSISDNInfoDB extends \SQLite3 {
 
       if ($r = $result->fetchArray(\SQLITE3_ASSOC)) {
         $stmt->close();
+        $r['error_message'] = 'mnc not found';
         return $r;
       }
-      $stmt->clear();
+      $stmt->close();
     }
 
-    $stmt->close();
-    return false;
+    return array('error_message' => 'country code not found');
   }
 
   /**
