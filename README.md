@@ -27,7 +27,7 @@ After that, it only takes one command to set everything up:
 composer install && vagrant up
 ```
 
-RPC call can be tested using client_test.php in project root folder (127.0.0.1:8080/client_test.php)
+RPC call can be tested using client_test.php in project root folder (127.0.0.1/client_test.php)
 
 ## Tests
 Composer will setup the test environent for you. Run tests using:
