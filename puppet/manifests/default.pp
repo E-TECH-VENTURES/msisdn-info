@@ -95,7 +95,7 @@ class install_php {
     owner => root,
     group => root,
     mode => 444,
-    content => "display_errors = On\nextension=sqlite3.so\n",
+    content => "display_errors=On\nextension=sqlite3.so\n);",
     require => Exec['apache_enable_php'],
     before => Class['restart_apache']
   }

@@ -3,16 +3,25 @@
 require 'MSISDNInfoDB.php';
 
 class MSISDNInfo {
-  // data url
+  
+  /**
+  * Data source path
+  */
   private $data_source = 'https://raw.githubusercontent.com/StemMajzel/mcc-mnc-table/master/mcc-mnc-table.json';
 
-  // database location
+  /**
+  * Data location
+  */
   private $db_path = __DIR__ . '/../db/data.sqlite';
 
-  // cached data max age in seconds
+  /**
+  * Max cache age - cache will be refreshed when older
+  */
   private $cache_max_age = 43200; // 12 hours
 
-  // db class
+  /**
+  * Store DB class
+  */
   public $db;
 
   public function __construct() {
