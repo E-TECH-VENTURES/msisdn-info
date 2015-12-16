@@ -1,0 +1,15 @@
+{
+  "name": "stemmajzel/msisdn-info",
+  "description": "PHP package that returns MSISDN info (MNO, country dialling code, ...)",
+  "require": {
+    "fguillot/json-rpc": ">=1.0.3"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "4.0.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "StemMajzel\\MSISDNInfo\\": "src"
+    }
+  }
+}

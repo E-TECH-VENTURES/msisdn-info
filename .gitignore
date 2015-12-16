@@ -1,0 +1,4 @@
+/.vagrant
+/vendor
+/db/data.sqlite
+composer.lock
